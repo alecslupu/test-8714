@@ -1,0 +1,53 @@
+version: "3.6"
+
+x-environment: &environment_variables
+  BUNDLE_PATH: /bundle_cache
+  SECRET_KEY_BASE: "1bf46ad7e2110b7c37d193ffca6cb8a728f56297e139ed57c6d442ff346266819bee5d6a1a20b30c5ef18dfbccca710d0c2b54b80e88f7f93d6c59763ecceb60"
+  FORCE_SSL: "false"
+  RAILS_ENV: test
+  RAILS_LOG_TO_STDOUT: "false"
+  THROTTLING_MAX_REQUESTS: 100000
+  THROTTLING_PERIOD: 60
+  RAILS_MAX_THREADS: 2
+  WEB_CONCURRENCY: 1
+  COFE_STAGE: development
+  DECIDIM_DEVELOPMENT: "true"
+  POSTGRES_HOST: postgres
+  REDIS_URL: redis://redis:6379/1
+  DISALLOW_ALL_WEB_CRAWLERS: "true"
+  BIG_SCREEN_SIZE: "true"
+
+x-template-app:
+  &template-app
+  image: registry.fpfis.eu/future-of-europe/comm-cofe-reference/test
+  depends_on:
+    - postgres
+  environment:
+    <<: *environment_variables
+    ASSET_HOST: http://alecslupu.go.ro:3300
+  volumes:
+    - /dev/shm:/dev/shm
+    - /dev/shm:/tmp
+    - ./:/code
+
+services:
+
+  postgres:
+    restart: always
+    environment:
+      - POSTGRES_DB=decidim
+      - POSTGRES_HOST_AUTH_METHOD=trust
+    image: "postgres:10.14"
+
+  app:
+    <<: *template-app
+    command: /bin/bash -c "bundle install && bundle exec rake test_app && cd spec/decidim_dummy_app && node -v && npm -v && npm list && bundle exec rake webpacker:compile"
+    image: registry.fpfis.eu/future-of-europe/comm-cofe-reference/test
+    environment:
+      <<: *environment_variables
+      DATABASE_URL: "postgres://postgres@postgres:5432/decidim"
+      ASSET_HOST: http://alecslupu.go.ro:3300
+      RAILS_MAX_THREADS: 1
+      WEB_CONCURRENCY: 1
+    depends_on:
+      - postgres

@@ -1,0 +1,29 @@
+variables:
+  POSTGRES_DB: decidim_test
+  POSTGRES_USER: test_user
+  POSTGRES_PASSWORD: test_user_password
+  POSTGRES_HOST_AUTH_METHOD: trust
+  DATABASE_URL: "postgres://test_user@postgres:5432/decidim_test"
+  DATABASE_USERNAME: test_user
+  DATABASE_PASSWORD: test_user_password
+  DATABASE_HOST: postgres
+  SIMPLECOV: "true"
+  RUBYOPT: '-W:no-deprecated'
+  RAILS_ENV: test
+
+stages:
+  - build
+
+rubocop:
+  stage: build
+  image: circleci/ruby:2.7.1-node-browsers
+  script:
+    - bundle install --jobs 4 --retry 3
+    - bundle exec rubocop -P app config lib
+
+rubycritic:
+  stage: build
+  image: circleci/ruby:2.7.1-node-browsers
+  script:
+    - gem install rubycritic
+    - rubycritic --no-browser app config lib
